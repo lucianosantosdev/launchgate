@@ -1,0 +1,85 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+    `maven-publish`
+}
+
+group = "dev.lssoftware"
+version = "0.1.0"
+
+kotlin {
+    androidTarget {
+        publishLibraryVariants("release")
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+
+    // Matches :composeApp — Compose Multiplatform 1.11+ no longer publishes iosX64.
+    iosArm64()
+    iosSimulatorArm64()
+
+    jvm("desktop")
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(libs.kotlinx.coroutines.core)
+            // Preferences DataStore is the only storage the gate needs, and consumers hand it
+            // their own instance — see VersionGate.create.
+            api(libs.androidx.datastore.preferences)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+
+            @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+            implementation(compose.uiTest)
+        }
+        // The Compose UI tests render through Skiko, whose native runtime ships with the
+        // desktop artifact. Test-only: consumers never see it.
+        val desktopTest by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                implementation(libs.kotlinx.coroutines.swing)
+            }
+        }
+    }
+}
+
+android {
+    namespace = "dev.lssoftware.launchgate"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    defaultConfig {
+        // Matches :composeApp rather than the catalog's 26, so the library never raises a
+        // consumer's floor.
+        minSdk = 24
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+publishing {
+    repositories {
+        // `./gradlew :launchgate:publishToMavenLocal` needs no configuration; the remote is only
+        // resolved when publishing to it, so a missing token never breaks a local build.
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/lucianosantosdev/lg-remote")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull
+                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.token").orNull
+            }
+        }
+    }
+}
