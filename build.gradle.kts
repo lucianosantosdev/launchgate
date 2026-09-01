@@ -1,10 +1,12 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.composeMultiplatform)
+    // AGP 9 refuses to apply `com.android.library` alongside the Kotlin Multiplatform
+    // plugin; the dedicated KMP library plugin is the replacement. Consumers on AGP 8
+    // can swap this back for `libs.plugins.androidLibrary` and restore the `android { }`
+    // block below.
+    alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.composeMultiplatform)
     `maven-publish`
 }
 
@@ -12,11 +14,12 @@ group = "dev.lssoftware"
 version = "0.1.0"
 
 kotlin {
-    androidTarget {
-        publishLibraryVariants("release")
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
+    android {
+        namespace = "dev.lssoftware.launchgate"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        // Deliberately below the catalog's floor so the library never raises a
+        // consumer's own minSdk.
+        minSdk = 24
     }
 
     // Matches :composeApp — Compose Multiplatform 1.11+ no longer publishes iosX64.
@@ -50,22 +53,6 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
-    }
-}
-
-android {
-    namespace = "dev.lssoftware.launchgate"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        // Matches :composeApp rather than the catalog's 26, so the library never raises a
-        // consumer's floor.
-        minSdk = 24
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
