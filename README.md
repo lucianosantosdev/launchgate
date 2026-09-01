@@ -195,10 +195,11 @@ WhatsNewScreen(
 pager, dots and button.
 
 Passing `onSkip` puts a dismiss control in the top corner that leaves the whole flow at once,
-without paging to the end. It is a separate callback from `onFinished` so you can tell "read it"
-from "skipped it"; most apps pass the same lambda, since either way the release has been offered.
-Leave it out — the default — for a flow meant to be read through, such as onboarding. The X is
-drawn, not imported, so it costs no Material-icons dependency.
+without paging to the end. Both `WhatsNewScreen` and `OnboardingScreen` take it. It is a separate
+callback from `onFinished` so you can tell "read it" from "skipped it"; most apps pass the same
+lambda, since either way the flow has been offered and the version should be marked seen. Leave it
+out — the default — for a flow with nowhere to skip to. The X is drawn, not imported, so it costs
+no Material-icons dependency.
 
 ## What the gate decides
 

@@ -54,7 +54,7 @@ const val CAROUSEL_SKIP_BUTTON_TAG: String = "launchgate_carousel_skip"
  *
  * [onSkip] adds a dismiss control in the top corner that leaves the whole flow at once, without
  * paging to the end. Supply [CarouselLabels.skip] with it, or the control has no accessible name.
- * Omit it — the default — for a flow that should be read through, such as onboarding.
+ * Omit it — the default — for a flow with nowhere to skip to.
  */
 @Composable
 fun PagerCarousel(

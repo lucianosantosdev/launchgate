@@ -30,6 +30,11 @@ import dev.lssoftware.launchgate.model.OnboardingPage
  * `VersionGate.markSeen()` from [onFinished] so the version the user installed is recorded and
  * neither this nor the changelog greets them again.
  *
+ * @param onSkip dismisses the introduction from any page, for someone who would rather get on with
+ *   it. Supply [CarouselLabels.skip] alongside it. Mark the version seen here too — a user who
+ *   skipped the introduction has still been offered it, and should not meet it again on the next
+ *   launch.
+ *
  * @param illustrationSize diameter of the tinted circle behind each page's illustration. Pass
  *   `0.dp` to drop the circle and let the illustration stand alone.
  */
@@ -39,6 +44,7 @@ fun OnboardingScreen(
     onFinished: () -> Unit,
     labels: CarouselLabels,
     modifier: Modifier = Modifier,
+    onSkip: (() -> Unit)? = null,
     colors: OnboardingColors = OnboardingColors.default(),
     indicator: IndicatorStyle = IndicatorStyle.default(),
     illustrationSize: Dp = 96.dp,
@@ -48,6 +54,7 @@ fun OnboardingScreen(
             pageCount = pages.size,
             labels = labels,
             onFinished = onFinished,
+            onSkip = onSkip,
             indicator = indicator,
         ) { index ->
             OnboardingPageContent(pages[index], colors, illustrationSize)
