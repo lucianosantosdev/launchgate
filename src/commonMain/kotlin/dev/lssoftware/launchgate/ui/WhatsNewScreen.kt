@@ -15,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,38 +61,75 @@ fun WhatsNewScreen(
     val pages = remember(releaseNotes) {
         releaseNotes.flatMap { note -> note.pages.map { page -> note.versionName to page } }
     }
-    Surface(modifier = modifier, color = colors.background) {
-        Box(contentAlignment = Alignment.Center) {
-            PagerCarousel(
-                pageCount = pages.size,
-                labels = labels,
-                onFinished = onFinished,
-                indicator = indicator,
-                header = title?.let {
-                    {
-                        Text(
-                            text = it,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.title,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(24.dp))
-                    }
-                },
-            ) { index ->
-                val (versionName, page) = pages[index]
-                ReleaseNoteContent(versionName = versionName, page = page, colors = colors)
+    // Provided around the whole screen so a page's own content slot can pick the colors up.
+    CompositionLocalProvider(LocalWhatsNewColors provides colors) {
+        Surface(modifier = modifier, color = colors.background) {
+            Box(contentAlignment = Alignment.Center) {
+                PagerCarousel(
+                    pageCount = pages.size,
+                    labels = labels,
+                    onFinished = onFinished,
+                    indicator = indicator,
+                    header = title?.let {
+                        {
+                            Text(
+                                text = it,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.title,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(Modifier.height(24.dp))
+                        }
+                    },
+                ) { index ->
+                    val (versionName, page) = pages[index]
+                    ReleaseNoteContent(versionName = versionName, page = page, colors = colors)
+                }
             }
         }
     }
 }
 
 /**
- * One page: the release it belongs to, its headline, and its changes as a bullet list.
+ * The [WhatsNewColors] of the enclosing [WhatsNewScreen], so a page's own `content` can match the
+ * screen it sits in without being handed anything. Falls back to [WhatsNewColors.default] outside
+ * one.
+ */
+val LocalWhatsNewColors = compositionLocalOf<WhatsNewColors?> { null }
+
+/**
+ * The default page body: one bullet per change, coloured from the enclosing screen.
  *
- * The bullets scroll within the page rather than the page growing: on a short window a page with
+ * Public so a custom [dev.lssoftware.launchgate.model.ReleaseNotePage] can put a bullet list
+ * beside a screenshot rather than choosing between them.
+ */
+@Composable
+fun ChangeList(changes: List<String>, modifier: Modifier = Modifier) {
+    val colors = LocalWhatsNewColors.current ?: WhatsNewColors.default()
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        changes.forEach { change ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "•",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colors.bullet,
+                )
+                Text(
+                    text = change,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.body,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One page: the release it belongs to, its headline, and whatever its content slot draws.
+ *
+ * The content scrolls within the page rather than the page growing: on a short window a page with
  * several changes is taller than the space between the header and the dots.
  */
 @Composable
@@ -124,22 +163,7 @@ private fun ReleaseNoteContent(
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(20.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            page.changes.forEach { change ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.bullet,
-                    )
-                    Text(
-                        text = change,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.body,
-                    )
-                }
-            }
-        }
+        page.content()
     }
 }
 

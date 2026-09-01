@@ -65,6 +65,21 @@ ReleaseNote(
 )
 ```
 
+A page's body is a **composable slot**, so it is not limited to bullets — show a screenshot, an
+animation, a before/after, anything:
+
+```kotlin
+ReleaseNotePage(title = "Faster D-pad") {
+    Image(painterResource(R.drawable.dpad_demo), contentDescription = null)
+    Spacer(Modifier.height(12.dp))
+    ChangeList(listOf("Hold an arrow and it keeps going"))   // the default bullet renderer
+}
+```
+
+The `changes` overload above is shorthand for exactly that slot filled with `ChangeList`. Custom
+content renders inside the page's scrolling column under the title, and can read
+`LocalWhatsNewColors` to match the screen it sits in without being passed anything.
+
 An update spanning releases 37 (2 pages) and 38 (3 pages) shows all five, newest release first,
 each page labelled with the release it belongs to. An entry with no pages is dropped rather than
 rendered blank.

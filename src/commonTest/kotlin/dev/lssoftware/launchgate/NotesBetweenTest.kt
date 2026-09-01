@@ -59,7 +59,8 @@ class NotesBetweenTest {
             pages = listOf(
                 ReleaseNotePage("first", listOf("a")),
                 ReleaseNotePage("second", listOf("b")),
-                ReleaseNotePage("third", listOf("c")),
+                // A page can bring its own composable instead of a bullet list.
+                ReleaseNotePage("third") { },
             ),
         )
         val shown = notesBetween(100, 200, listOf(multiPage))

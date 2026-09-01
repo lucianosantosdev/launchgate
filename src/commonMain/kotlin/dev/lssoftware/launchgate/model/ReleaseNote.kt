@@ -1,9 +1,18 @@
 package dev.lssoftware.launchgate.model
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import dev.lssoftware.launchgate.ui.ChangeList
 
 /**
- * One screen of a release's notes: a headline and the changes under it.
+ * One screen of a release's notes: a headline and whatever belongs under it.
+ *
+ * [content] is a composable slot, so a page is not limited to a bullet list — a screenshot, a
+ * before/after, an animation or a link all fit. It renders inside the page's scrolling column,
+ * under the version label and [title], and can read the screen's [WhatsNewColors] from
+ * [dev.lssoftware.launchgate.ui.LocalWhatsNewColors] to match without being passed anything.
+ *
+ * For the usual bullet list, use the [ReleaseNotePage] overload taking `changes`.
  *
  * Splitting a release across several pages is a deliberate editorial act, not an automatic
  * overflow rule — a release that did three unrelated things reads better as three headlines than
@@ -12,8 +21,14 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class ReleaseNotePage(
     val title: String,
-    val changes: List<String>,
+    val content: @Composable () -> Unit,
 )
+
+/** A page whose body is the usual bullet list of [changes]. */
+fun ReleaseNotePage(
+    title: String,
+    changes: List<String>,
+): ReleaseNotePage = ReleaseNotePage(title) { ChangeList(changes) }
 
 /**
  * One release's entry in a changelog, as one or more [pages].
