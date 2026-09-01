@@ -17,7 +17,7 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalTestApi::class)
 class PagerCarouselUiTest {
 
-    private val labels = CarouselLabels(next = "Next", finish = "Got it", skip = "Close")
+    private val labels = CarouselLabels(next = "Next", finish = "Got it", skip = "Skip")
 
     @Test
     fun singlePageFinishesImmediately() = runComposeUiTest {
@@ -48,6 +48,7 @@ class PagerCarouselUiTest {
         }
 
         onNodeWithText("page 0").assertIsDisplayed()
+        onNodeWithText("Skip").assertIsDisplayed()
         onNodeWithTag(CAROUSEL_SKIP_BUTTON_TAG).performClick()
         assertEquals(1, skipped)
         assertEquals(0, finished, "skipping is not finishing the last page")

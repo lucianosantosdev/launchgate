@@ -45,7 +45,7 @@ import dev.lssoftware.launchgate.model.ReleaseNotePage
  * [releaseNotes] must not be empty, and neither must any entry's pages.
  *
  * @param onSkip dismisses the whole changelog from the first page, for a reader who does not want
- *   to page through it. Supply [CarouselLabels.skip] alongside it. It is a separate callback from
+ *   to page through it. Needs [CarouselLabels.skip] for its label. It is a separate callback from
  *   [onFinished] so a consumer can tell "read it" from "skipped it" — most will pass the same
  *   lambda, since either way the release has been offered and should be marked seen.
  *

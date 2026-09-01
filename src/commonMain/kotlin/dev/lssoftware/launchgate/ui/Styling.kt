@@ -18,8 +18,8 @@ data class CarouselLabels(
     /** Completes the flow. Shown on the last page only. */
     val finish: String,
     /**
-     * Accessibility label for the skip button, which shows an icon rather than text. Required
-     * whenever a skip callback is supplied — an unlabelled control is invisible to a screen reader.
+     * Leaves the flow without paging to the end, shown in the top corner. Required whenever a skip
+     * callback is supplied — with no label there is nothing to draw, so the control is omitted.
      */
     val skip: String? = null,
 )

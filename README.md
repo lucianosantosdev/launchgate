@@ -162,11 +162,11 @@ when (val destination = start) {
     is StartDestination.WhatsNew -> WhatsNewScreen(
         releaseNotes = destination.releaseNotes,   // already filtered, newest first
         onFinished = { viewModel.onFinished(); goHome() },
-        onSkip = { viewModel.onFinished(); goHome() },   // optional X in the corner
+        onSkip = { viewModel.onFinished(); goHome() },   // optional skip button
         labels = CarouselLabels(
             next = stringResource(R.string.next),
             finish = stringResource(R.string.got_it),
-            skip = stringResource(R.string.close),       // accessibility label for the X
+            skip = stringResource(R.string.skip),        // label for the skip button
         ),
         title = stringResource(R.string.whats_new),
     )
@@ -194,12 +194,11 @@ WhatsNewScreen(
 `PagerCarousel` is public too — build a third paged flow on it rather than reimplementing the
 pager, dots and button.
 
-Passing `onSkip` puts a dismiss control in the top corner that leaves the whole flow at once,
-without paging to the end. Both `WhatsNewScreen` and `OnboardingScreen` take it. It is a separate
+Passing `onSkip` puts a text button in the top corner — labelled by `CarouselLabels.skip` — that
+leaves the whole flow at once, without paging to the end. Both `WhatsNewScreen` and `OnboardingScreen` take it. It is a separate
 callback from `onFinished` so you can tell "read it" from "skipped it"; most apps pass the same
 lambda, since either way the flow has been offered and the version should be marked seen. Leave it
-out — the default — for a flow with nowhere to skip to. The X is drawn, not imported, so it costs
-no Material-icons dependency.
+out — the default — for a flow with nowhere to skip to.
 
 ## What the gate decides
 

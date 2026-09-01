@@ -31,7 +31,7 @@ import dev.lssoftware.launchgate.model.OnboardingPage
  * neither this nor the changelog greets them again.
  *
  * @param onSkip dismisses the introduction from any page, for someone who would rather get on with
- *   it. Supply [CarouselLabels.skip] alongside it. Mark the version seen here too — a user who
+ *   it. Needs [CarouselLabels.skip] for its label. Mark the version seen here too — a user who
  *   skipped the introduction has still been offered it, and should not meet it again on the next
  *   launch.
  *

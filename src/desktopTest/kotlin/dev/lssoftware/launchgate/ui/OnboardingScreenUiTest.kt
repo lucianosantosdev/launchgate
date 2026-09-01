@@ -18,7 +18,7 @@ class OnboardingScreenUiTest {
         OnboardingPage(title = "First", description = "one"),
         OnboardingPage(title = "Second", description = "two"),
     )
-    private val labels = CarouselLabels(next = "Next", finish = "Start", skip = "Close")
+    private val labels = CarouselLabels(next = "Next", finish = "Start", skip = "Skip")
 
     @Test
     fun skipLeavesTheIntroductionEarly() = runComposeUiTest {

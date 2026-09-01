@@ -18,10 +18,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.Canvas
 import androidx.compose.material3.Button
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,11 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -52,9 +46,9 @@ const val CAROUSEL_SKIP_BUTTON_TAG: String = "launchgate_carousel_skip"
  * a consumer wanting a third paged flow of its own should build it from this rather than
  * reimplementing the pager, dots and button.
  *
- * [onSkip] adds a dismiss control in the top corner that leaves the whole flow at once, without
- * paging to the end. Supply [CarouselLabels.skip] with it, or the control has no accessible name.
- * Omit it — the default — for a flow with nowhere to skip to.
+ * [onSkip] adds a text button in the top corner that leaves the whole flow at once, without paging
+ * to the end. It needs [CarouselLabels.skip] for its label; without one, nothing is drawn. Omit it
+ * — the default — for a flow with nowhere to skip to.
  */
 @Composable
 fun PagerCarousel(
@@ -84,16 +78,17 @@ fun PagerCarousel(
             // title stays centred and the pager loses no height to a row of its own.
             Box(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) { header?.invoke(this) }
-                if (onSkip != null) {
-                    val description = labels.skip
-                    IconButton(
+                // Both halves are needed: a skip callback with no label would be an unreadable
+                // control, and a label with no callback would do nothing.
+                val skipLabel = labels.skip
+                if (onSkip != null && skipLabel != null) {
+                    TextButton(
                         onClick = onSkip,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .testTag(CAROUSEL_SKIP_BUTTON_TAG)
-                            .semantics { if (description != null) contentDescription = description },
+                            .testTag(CAROUSEL_SKIP_BUTTON_TAG),
                     ) {
-                        CloseGlyph()
+                        Text(skipLabel)
                     }
                 }
             }
@@ -125,20 +120,6 @@ fun PagerCarousel(
         ) {
             Text(if (isLastPage) labels.finish else labels.next)
         }
-    }
-}
-
-/**
- * An X, drawn rather than imported: two lines are not worth making every consumer of this library
- * pull in the Material icons artifact.
- */
-@Composable
-private fun CloseGlyph() {
-    val color = LocalContentColor.current
-    Canvas(Modifier.size(18.dp)) {
-        val stroke = 2.dp.toPx()
-        drawLine(color, Offset(0f, 0f), Offset(size.width, size.height), stroke, StrokeCap.Round)
-        drawLine(color, Offset(size.width, 0f), Offset(0f, size.height), stroke, StrokeCap.Round)
     }
 }
 
