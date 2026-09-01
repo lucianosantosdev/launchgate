@@ -17,6 +17,11 @@ data class CarouselLabels(
     val next: String,
     /** Completes the flow. Shown on the last page only. */
     val finish: String,
+    /**
+     * Accessibility label for the skip button, which shows an icon rather than text. Required
+     * whenever a skip callback is supplied — an unlabelled control is invisible to a screen reader.
+     */
+    val skip: String? = null,
 )
 
 /** Page-indicator appearance. The current page's dot is [activeWidth] wide instead of [dotSize]. */

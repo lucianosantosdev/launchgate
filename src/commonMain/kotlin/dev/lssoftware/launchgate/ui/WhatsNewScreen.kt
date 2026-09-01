@@ -44,6 +44,11 @@ import dev.lssoftware.launchgate.model.ReleaseNotePage
  *
  * [releaseNotes] must not be empty, and neither must any entry's pages.
  *
+ * @param onSkip dismisses the whole changelog from the first page, for a reader who does not want
+ *   to page through it. Supply [CarouselLabels.skip] alongside it. It is a separate callback from
+ *   [onFinished] so a consumer can tell "read it" from "skipped it" — most will pass the same
+ *   lambda, since either way the release has been offered and should be marked seen.
+ *
  * @param title optional heading above the pages (e.g. a localized "What's New"). Omitted when null.
  */
 @Composable
@@ -52,6 +57,7 @@ fun WhatsNewScreen(
     onFinished: () -> Unit,
     labels: CarouselLabels,
     modifier: Modifier = Modifier,
+    onSkip: (() -> Unit)? = null,
     title: String? = null,
     colors: WhatsNewColors = WhatsNewColors.default(),
     indicator: IndicatorStyle = IndicatorStyle.default(),
@@ -69,6 +75,7 @@ fun WhatsNewScreen(
                     pageCount = pages.size,
                     labels = labels,
                     onFinished = onFinished,
+                    onSkip = onSkip,
                     indicator = indicator,
                     header = title?.let {
                         {
