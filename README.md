@@ -49,6 +49,25 @@ val releaseNotes = listOf(
     ),
     ReleaseNote(versionCode = 36, versionName = "1.7.1", title = "Roku TVs", changes = listOf("…")),
 )
+```
+
+A release that did unrelated things can carry **several pages**, each with its own headline —
+better than one page of nine bullets. The single-page form above is shorthand for a one-page list:
+
+```kotlin
+ReleaseNote(
+    versionCode = 42,
+    versionName = "1.7.5",
+    pages = listOf(
+        ReleaseNotePage("Faster D-pad", listOf("Hold an arrow and it keeps going")),
+        ReleaseNotePage("Smarter connect", listOf("Opens on the TV you use most")),
+    ),
+)
+```
+
+An update spanning releases 37 (2 pages) and 38 (3 pages) shows all five, newest release first,
+each page labelled with the release it belongs to. An entry with no pages is dropped rather than
+rendered blank.
 
 val onboardingPages = listOf(
     OnboardingPage(

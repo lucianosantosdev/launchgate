@@ -1,6 +1,7 @@
 package dev.lssoftware.launchgate
 
 import dev.lssoftware.launchgate.model.ReleaseNote
+import dev.lssoftware.launchgate.model.ReleaseNotePage
 import dev.lssoftware.launchgate.model.notesBetween
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,5 +48,28 @@ class NotesBetweenTest {
     @Test
     fun skipsVersionsWithNoEntry() {
         assertTrue(notesBetween(200, 299, notes).isEmpty())
+    }
+
+    /** A release can span several pages; they travel together, in the order written. */
+    @Test
+    fun keepsEveryPageOfAMultiPageRelease() {
+        val multiPage = ReleaseNote(
+            versionCode = 200,
+            versionName = "2.0",
+            pages = listOf(
+                ReleaseNotePage("first", listOf("a")),
+                ReleaseNotePage("second", listOf("b")),
+                ReleaseNotePage("third", listOf("c")),
+            ),
+        )
+        val shown = notesBetween(100, 200, listOf(multiPage))
+        assertEquals(listOf("first", "second", "third"), shown.single().pages.map { it.title })
+    }
+
+    /** An entry with no pages is no entry at all — it must not become a blank screen. */
+    @Test
+    fun dropsEntriesWithNoPages() {
+        val empty = ReleaseNote(versionCode = 200, versionName = "2.0", pages = emptyList())
+        assertTrue(notesBetween(100, 200, listOf(empty)).isEmpty())
     }
 }
