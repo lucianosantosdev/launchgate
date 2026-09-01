@@ -75,7 +75,7 @@ publishing {
         // resolved when publishing to it, so a missing token never breaks a local build.
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/lucianosantosdev/lg-remote")
+            url = uri("https://maven.pkg.github.com/lucianosantosdev/launchgate")
             credentials {
                 username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull
                 password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.token").orNull

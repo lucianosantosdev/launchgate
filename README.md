@@ -11,15 +11,27 @@ Targets: Android, iOS (arm64 + simulator), desktop JVM.
 
 ## Install
 
+Either take it as a git submodule and build it from source:
+
+```bash
+git submodule add git@github.com:lucianosantosdev/launchgate.git launchgate
+```
+
 ```kotlin
-// settings.gradle.kts — while it lives in this repo
+// settings.gradle.kts
 include(":launchgate")
 
 // consumer build.gradle.kts
 commonMain.dependencies {
-    implementation(projects.launchgate)          // same repo
-    // or, once published:
-    // implementation("dev.lssoftware:launchgate:0.1.0")
+    implementation(projects.launchgate)
+}
+```
+
+…or depend on a published build:
+
+```kotlin
+commonMain.dependencies {
+    implementation("dev.lssoftware:launchgate:0.1.0")
 }
 ```
 
@@ -34,7 +46,7 @@ GitHub Packages credentials come from `GITHUB_ACTOR`/`GITHUB_TOKEN`, or `gpr.use
 `~/.gradle/gradle.properties`. Consumers add the repository:
 
 ```kotlin
-maven("https://maven.pkg.github.com/lucianosantosdev/lg-remote") { credentials { /* … */ } }
+maven("https://maven.pkg.github.com/lucianosantosdev/launchgate") { credentials { /* … */ } }
 ```
 
 ## Define your content
