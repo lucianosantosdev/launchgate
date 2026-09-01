@@ -44,6 +44,9 @@ import dev.lssoftware.launchgate.model.ReleaseNotePage
  *
  * [releaseNotes] must not be empty, and neither must any entry's pages.
  *
+ * @param showVersionName draws each page's [ReleaseNote.versionName] above its headline. Useful
+ *   while testing a changelog, and noise to a reader who only wants to know what changed — most
+ *   apps will want it on for debug builds only.
  * @param onSkip dismisses the whole changelog from the first page, for a reader who does not want
  *   to page through it. Needs [CarouselLabels.skip] for its label. It is a separate callback from
  *   [onFinished] so a consumer can tell "read it" from "skipped it" — most will pass the same
@@ -59,6 +62,7 @@ fun WhatsNewScreen(
     modifier: Modifier = Modifier,
     onSkip: (() -> Unit)? = null,
     title: String? = null,
+    showVersionName: Boolean = true,
     colors: WhatsNewColors = WhatsNewColors.default(),
     indicator: IndicatorStyle = IndicatorStyle.default(),
 ) {
@@ -92,7 +96,11 @@ fun WhatsNewScreen(
                     },
                 ) { index ->
                     val (versionName, page) = pages[index]
-                    ReleaseNoteContent(versionName = versionName, page = page, colors = colors)
+                    ReleaseNoteContent(
+                        versionName = versionName.takeIf { showVersionName },
+                        page = page,
+                        colors = colors,
+                    )
                 }
             }
         }
@@ -134,14 +142,15 @@ fun ChangeList(changes: List<String>, modifier: Modifier = Modifier) {
 }
 
 /**
- * One page: the release it belongs to, its headline, and whatever its content slot draws.
+ * One page: the release it belongs to (when [versionName] is given), its headline, and whatever
+ * its content slot draws.
  *
  * The content scrolls within the page rather than the page growing: on a short window a page with
  * several changes is taller than the space between the header and the dots.
  */
 @Composable
 private fun ReleaseNoteContent(
-    versionName: String,
+    versionName: String?,
     page: ReleaseNotePage,
     colors: WhatsNewColors,
     modifier: Modifier = Modifier,
@@ -156,13 +165,15 @@ private fun ReleaseNoteContent(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .padding(end = 12.dp),
     ) {
-        Text(
-            text = versionName,
-            style = MaterialTheme.typography.labelLarge,
-            color = colors.versionLabel,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.height(8.dp))
+        if (versionName != null) {
+            Text(
+                text = versionName,
+                style = MaterialTheme.typography.labelLarge,
+                color = colors.versionLabel,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
         Text(
             text = page.title,
             style = MaterialTheme.typography.headlineSmall,
