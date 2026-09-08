@@ -42,4 +42,13 @@ data class OnboardingPage(
      * mid-scroll, and acting then would fire while the previous page is still on screen.
      */
     val onShown: (() -> Unit)? = null,
+    /**
+     * Leave this page by itself the moment this turns true — a page whose whole purpose has just
+     * been served, such as a permission the user has now granted, with nothing left to read.
+     *
+     * Only a change *while the page is showing* counts. Arriving with it already true does
+     * nothing, or a user paging back to re-read the page would be thrown forward again the
+     * instant they got there.
+     */
+    val autoAdvance: Boolean = false,
 )

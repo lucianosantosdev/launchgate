@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -36,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Identifies the advance/finish button, which has no stable label of its own to match on. */
@@ -68,6 +70,9 @@ const val CAROUSEL_PAGER_TAG: String = "launchgate_carousel_pager"
  *   false, or skipping walks straight around the gate.
  * @param onPageSettled called with a page's index once it has come to rest, for a page that has
  *   something to do on arrival. Not called for a neighbour merely composed during a scroll.
+ * @param autoAdvance whether the given page has served its purpose and should be left without a
+ *   tap. Acted on only when it turns true while the page is showing; see
+ *   [dev.lssoftware.launchgate.model.OnboardingPage.autoAdvance].
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -82,6 +87,7 @@ fun PagerCarousel(
     canAdvance: (index: Int) -> Boolean = { true },
     skipVisible: (index: Int) -> Boolean = { true },
     onPageSettled: (index: Int) -> Unit = {},
+    autoAdvance: (index: Int) -> Boolean = { false },
     header: @Composable (ColumnScope.() -> Unit)? = null,
     page: @Composable (index: Int) -> Unit,
 ) {
@@ -104,6 +110,30 @@ fun PagerCarousel(
     val settledCallback by rememberUpdatedState(onPageSettled)
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { settledCallback(it) }
+    }
+
+    // A page that satisfies itself while being looked at moves on without a tap. Read through
+    // rememberUpdatedState so the flag is re-evaluated against the freshly built page list, and
+    // compared against its value on arrival so that only a change here counts — see
+    // OnboardingPage.autoAdvance for why arriving already-satisfied must sit still.
+    val shouldAdvance by rememberUpdatedState(autoAdvance)
+    LaunchedEffect(pagerState.settledPage) {
+        val page = pagerState.settledPage
+        if (page >= pageCount - 1 || shouldAdvance(page)) return@LaunchedEffect
+        // Wait for the *pager* to have somewhere to go, not just for the flag. Satisfying a page
+        // usually opens its gate too, and the reachable page count grows in the same recomposition
+        // — scrolling on the flag alone races that and is clamped back to where it started.
+        snapshotFlow { shouldAdvance(page) && pagerState.pageCount > page + 1 }.first { it }
+        // Launched on the composable's own scope, not this effect's. The effect is keyed on the
+        // settled page, and scrolling changes it — running the animation here would cancel the
+        // coroutine driving it half way, and the pager would slide back where it started.
+        // Let the pager lay out with its new page count first. Satisfying a page usually opens
+        // its gate, and until the pager has measured again it still believes the next page does
+        // not exist — asking it to scroll there is silently clamped back to where it already is.
+        withFrameNanos { }
+        if (pagerState.settledPage == page) {
+            scope.launch { pagerState.animateScrollToPage(page + 1) }
+        }
     }
 
     // Paging *back* stays available even from a gated page, by swipe and by the system back

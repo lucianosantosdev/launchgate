@@ -5,6 +5,9 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsDisplayed
@@ -173,6 +176,44 @@ class OnboardingScreenUiTest {
         }
         onNodeWithTag(CAROUSEL_ACTION_BUTTON_TAG).assertIsEnabled()
         onNodeWithTag(CAROUSEL_SKIP_BUTTON_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun leavesAPageByItselfOnceItIsSatisfied() = runComposeUiTest {
+        var satisfied by mutableStateOf(false)
+        setContent {
+            OnboardingScreen(
+                pages = listOf(
+                    OnboardingPage(title = "First", description = "one", autoAdvance = satisfied),
+                    OnboardingPage(title = "Second", description = "two"),
+                ),
+                onFinished = {},
+                labels = labels,
+            )
+        }
+
+        onNodeWithText("First").assertIsDisplayed()
+        satisfied = true
+        waitForIdle()
+        assertSettledOn(showing = "Second", hidden = "First")
+    }
+
+    @Test
+    fun staysPutWhenAPageIsAlreadySatisfiedOnArrival() = runComposeUiTest {
+        setContent {
+            OnboardingScreen(
+                pages = listOf(
+                    OnboardingPage(title = "First", description = "one", autoAdvance = true),
+                    OnboardingPage(title = "Second", description = "two"),
+                ),
+                onFinished = {},
+                labels = labels,
+            )
+        }
+
+        waitForIdle()
+        // Otherwise paging back to re-read this page would throw the reader forward again.
+        assertSettledOn(showing = "First", hidden = "Second")
     }
 
     @Test

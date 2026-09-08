@@ -64,6 +64,7 @@ fun OnboardingScreen(
             canAdvance = { index -> pages[index].canAdvance },
             skipVisible = { index -> pages[index].skippable },
             onPageSettled = { index -> pages.getOrNull(index)?.onShown?.invoke() },
+            autoAdvance = { index -> pages.getOrNull(index)?.autoAdvance == true },
         ) { index ->
             OnboardingPageContent(pages[index], colors, illustrationSize)
         }
