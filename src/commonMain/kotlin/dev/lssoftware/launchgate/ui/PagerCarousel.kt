@@ -22,9 +22,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -64,6 +66,8 @@ const val CAROUSEL_PAGER_TAG: String = "launchgate_carousel_pager"
  *   itself.
  * @param skipVisible whether the skip control shows on the given page. A gated page should return
  *   false, or skipping walks straight around the gate.
+ * @param onPageSettled called with a page's index once it has come to rest, for a page that has
+ *   something to do on arrival. Not called for a neighbour merely composed during a scroll.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -77,6 +81,7 @@ fun PagerCarousel(
     maxContentWidth: androidx.compose.ui.unit.Dp = 480.dp,
     canAdvance: (index: Int) -> Boolean = { true },
     skipVisible: (index: Int) -> Boolean = { true },
+    onPageSettled: (index: Int) -> Unit = {},
     header: @Composable (ColumnScope.() -> Unit)? = null,
     page: @Composable (index: Int) -> Unit,
 ) {
@@ -92,6 +97,14 @@ fun PagerCarousel(
     val scope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage >= pageCount - 1
     val mayLeavePage = canAdvance(pagerState.currentPage)
+
+    // Reported only once a page has actually come to rest. The pager composes its neighbour
+    // during a scroll, so a page that acts on being shown — asking for a permission, say — would
+    // otherwise fire while the user is still looking at the page before it.
+    val settledCallback by rememberUpdatedState(onPageSettled)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { settledCallback(it) }
+    }
 
     // Paging *back* stays available even from a gated page, by swipe and by the system back
     // gesture. A gate exists to stop someone moving on before a requirement is met, not to trap

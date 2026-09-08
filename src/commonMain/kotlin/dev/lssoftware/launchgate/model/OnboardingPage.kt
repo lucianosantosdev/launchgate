@@ -36,4 +36,10 @@ data class OnboardingPage(
      * suppress it, or the whole gate is one tap away from being bypassed.
      */
     val skippable: Boolean = true,
+    /**
+     * Run once this page has settled in front of the user — asking for the permission it is there
+     * to explain, say. Deliberately not "when composed": the pager builds the neighbouring page
+     * mid-scroll, and acting then would fire while the previous page is still on screen.
+     */
+    val onShown: (() -> Unit)? = null,
 )
