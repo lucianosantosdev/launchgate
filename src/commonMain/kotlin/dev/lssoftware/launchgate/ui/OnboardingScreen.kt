@@ -37,6 +37,11 @@ import dev.lssoftware.launchgate.model.OnboardingPage
  *
  * @param illustrationSize diameter of the tinted circle behind each page's illustration. Pass
  *   `0.dp` to drop the circle and let the illustration stand alone.
+ *
+ * A page carrying [OnboardingPage.canAdvance] `false` holds the flow: its advance button is
+ * disabled and the pager stops scrolling until the page says otherwise. Give such a page an
+ * [OnboardingPage.action] so the user has some way to satisfy it, and set
+ * [OnboardingPage.skippable] to false so the skip control does not walk around it.
  */
 @Composable
 fun OnboardingScreen(
@@ -56,6 +61,10 @@ fun OnboardingScreen(
             onFinished = onFinished,
             onSkip = onSkip,
             indicator = indicator,
+            canAdvance = { index -> pages[index].canAdvance },
+            skipVisible = { index -> pages[index].skippable },
+            onPageSettled = { index -> pages.getOrNull(index)?.onShown?.invoke() },
+            autoAdvance = { index -> pages.getOrNull(index)?.autoAdvance == true },
         ) { index ->
             OnboardingPageContent(pages[index], colors, illustrationSize)
         }
@@ -70,7 +79,7 @@ private fun OnboardingPageContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -103,5 +112,9 @@ private fun OnboardingPageContent(
             color = colors.body,
             textAlign = TextAlign.Center,
         )
+        page.action?.let { action ->
+            Spacer(Modifier.height(24.dp))
+            action()
+        }
     }
 }

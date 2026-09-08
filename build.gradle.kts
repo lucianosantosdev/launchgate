@@ -34,6 +34,9 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            // The carousel handles the system back gesture so a gated page can still be left
+            // backwards; `compose.ui` does not put this artifact on the compile classpath.
+            implementation("org.jetbrains.compose.ui:ui-backhandler:${libs.versions.compose.plugin.get()}")
             implementation(libs.kotlinx.coroutines.core)
             // Preferences DataStore is the only storage the gate needs, and consumers hand it
             // their own instance — see VersionGate.create.

@@ -15,4 +15,40 @@ data class OnboardingPage(
     val title: String,
     val description: String,
     val illustration: (@Composable () -> Unit)? = null,
+    /**
+     * Interactive content under [description] — a live status line, a button that asks for a
+     * permission. Rendered inside the page, so it scrolls and animates with it.
+     *
+     * This is what makes a gated page usable: [canAdvance] says the user may not leave yet, and
+     * this slot is where they are given the means to satisfy whatever is holding them.
+     */
+    val action: (@Composable () -> Unit)? = null,
+    /**
+     * False holds the carousel here: the advance button is disabled and the pager will not scroll.
+     *
+     * Recomputed with the page list, so a consumer building its pages inside a composable can
+     * derive this straight from live state and the gate opens on its own the moment the condition
+     * is met.
+     */
+    val canAdvance: Boolean = true,
+    /**
+     * False hides the skip control while this page shows. A page that gates on something has to
+     * suppress it, or the whole gate is one tap away from being bypassed.
+     */
+    val skippable: Boolean = true,
+    /**
+     * Run once this page has settled in front of the user — asking for the permission it is there
+     * to explain, say. Deliberately not "when composed": the pager builds the neighbouring page
+     * mid-scroll, and acting then would fire while the previous page is still on screen.
+     */
+    val onShown: (() -> Unit)? = null,
+    /**
+     * Leave this page by itself the moment this turns true — a page whose whole purpose has just
+     * been served, such as a permission the user has now granted, with nothing left to read.
+     *
+     * Only a change *while the page is showing* counts. Arriving with it already true does
+     * nothing, or a user paging back to re-read the page would be thrown forward again the
+     * instant they got there.
+     */
+    val autoAdvance: Boolean = false,
 )

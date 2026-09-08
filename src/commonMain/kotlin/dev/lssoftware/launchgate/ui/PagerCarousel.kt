@@ -22,14 +22,22 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Identifies the advance/finish button, which has no stable label of its own to match on. */
@@ -37,6 +45,9 @@ const val CAROUSEL_ACTION_BUTTON_TAG: String = "launchgate_carousel_action"
 
 /** Identifies the skip button. */
 const val CAROUSEL_SKIP_BUTTON_TAG: String = "launchgate_carousel_skip"
+
+/** Identifies the pager itself, for tests that need to swipe it. */
+const val CAROUSEL_PAGER_TAG: String = "launchgate_carousel_pager"
 
 /**
  * A swipeable, paged screen with dots and a single advancing button: [CarouselLabels.next] on
@@ -49,7 +60,21 @@ const val CAROUSEL_SKIP_BUTTON_TAG: String = "launchgate_carousel_skip"
  * [onSkip] adds a text button in the top corner that leaves the whole flow at once, without paging
  * to the end. It needs [CarouselLabels.skip] for its label; without one, nothing is drawn. Omit it
  * — the default — for a flow with nowhere to skip to.
+ *
+ * @param canAdvance whether the user may move *on* from the given page yet. Returning false
+ *   disables the advance button and swallows forward swipes, so a page with a condition to satisfy
+ *   — a permission, a network — can hold the flow until it is met. Backward swipes and the system
+ *   back gesture keep working regardless. Re-evaluated on recomposition, so the gate opens by
+ *   itself.
+ * @param skipVisible whether the skip control shows on the given page. A gated page should return
+ *   false, or skipping walks straight around the gate.
+ * @param onPageSettled called with a page's index once it has come to rest, for a page that has
+ *   something to do on arrival. Not called for a neighbour merely composed during a scroll.
+ * @param autoAdvance whether the given page has served its purpose and should be left without a
+ *   tap. Acted on only when it turns true while the page is showing; see
+ *   [dev.lssoftware.launchgate.model.OnboardingPage.autoAdvance].
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PagerCarousel(
     pageCount: Int,
@@ -59,12 +84,64 @@ fun PagerCarousel(
     onSkip: (() -> Unit)? = null,
     indicator: IndicatorStyle = IndicatorStyle.default(),
     maxContentWidth: androidx.compose.ui.unit.Dp = 480.dp,
+    canAdvance: (index: Int) -> Boolean = { true },
+    skipVisible: (index: Int) -> Boolean = { true },
+    onPageSettled: (index: Int) -> Unit = {},
+    autoAdvance: (index: Int) -> Boolean = { false },
     header: @Composable (ColumnScope.() -> Unit)? = null,
     page: @Composable (index: Int) -> Unit,
 ) {
-    val pagerState = rememberPagerState(pageCount = { pageCount })
+    // The pager is handed only the pages the user may actually reach: everything up to and
+    // including the first one that gates. Bounding the pager is what refuses a forward swipe,
+    // rather than intercepting its scroll deltas — it then handles its own edge the way it always
+    // does, rubber-banding and snapping back. Consuming deltas instead means eventually consuming
+    // one the pager needed to settle itself, which leaves it frozen half way between two pages.
+    // Backward movement is untouched, by swipe and by the back gesture below.
+    val reachablePageCount = (0 until pageCount).firstOrNull { !canAdvance(it) }?.plus(1) ?: pageCount
+    val reachable by rememberUpdatedState(reachablePageCount)
+    val pagerState = rememberPagerState(pageCount = { reachable })
     val scope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage >= pageCount - 1
+    val mayLeavePage = canAdvance(pagerState.currentPage)
+
+    // Reported only once a page has actually come to rest. The pager composes its neighbour
+    // during a scroll, so a page that acts on being shown — asking for a permission, say — would
+    // otherwise fire while the user is still looking at the page before it.
+    val settledCallback by rememberUpdatedState(onPageSettled)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { settledCallback(it) }
+    }
+
+    // A page that satisfies itself while being looked at moves on without a tap. Read through
+    // rememberUpdatedState so the flag is re-evaluated against the freshly built page list, and
+    // compared against its value on arrival so that only a change here counts — see
+    // OnboardingPage.autoAdvance for why arriving already-satisfied must sit still.
+    val shouldAdvance by rememberUpdatedState(autoAdvance)
+    LaunchedEffect(pagerState.settledPage) {
+        val page = pagerState.settledPage
+        if (page >= pageCount - 1 || shouldAdvance(page)) return@LaunchedEffect
+        // Wait for the *pager* to have somewhere to go, not just for the flag. Satisfying a page
+        // usually opens its gate too, and the reachable page count grows in the same recomposition
+        // — scrolling on the flag alone races that and is clamped back to where it started.
+        snapshotFlow { shouldAdvance(page) && pagerState.pageCount > page + 1 }.first { it }
+        // Launched on the composable's own scope, not this effect's. The effect is keyed on the
+        // settled page, and scrolling changes it — running the animation here would cancel the
+        // coroutine driving it half way, and the pager would slide back where it started.
+        // Let the pager lay out with its new page count first. Satisfying a page usually opens
+        // its gate, and until the pager has measured again it still believes the next page does
+        // not exist — asking it to scroll there is silently clamped back to where it already is.
+        withFrameNanos { }
+        if (pagerState.settledPage == page) {
+            scope.launch { pagerState.animateScrollToPage(page + 1) }
+        }
+    }
+
+    // Paging *back* stays available even from a gated page, by swipe and by the system back
+    // gesture. A gate exists to stop someone moving on before a requirement is met, not to trap
+    // them on the page — re-reading what came before is always reasonable.
+    BackHandler(enabled = pagerState.currentPage > 0) {
+        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+    }
 
     Column(
         modifier = modifier
@@ -81,7 +158,7 @@ fun PagerCarousel(
                 // Both halves are needed: a skip callback with no label would be an unreadable
                 // control, and a label with no callback would do nothing.
                 val skipLabel = labels.skip
-                if (onSkip != null && skipLabel != null) {
+                if (onSkip != null && skipLabel != null && skipVisible(pagerState.currentPage)) {
                     TextButton(
                         onClick = onSkip,
                         modifier = Modifier
@@ -97,7 +174,10 @@ fun PagerCarousel(
         // a page contains — a release with six bullets must not push them off-screen.
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .testTag(CAROUSEL_PAGER_TAG),
             verticalAlignment = Alignment.CenterVertically,
         ) { index ->
             page(index)
@@ -113,6 +193,7 @@ fun PagerCarousel(
                     scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                 }
             },
+            enabled = mayLeavePage,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
