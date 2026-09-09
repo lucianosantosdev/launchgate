@@ -1,5 +1,8 @@
 package dev.lssoftware.launchgate.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
@@ -17,10 +20,12 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.unit.dp
 import dev.lssoftware.launchgate.model.OnboardingPage
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -221,5 +226,31 @@ class OnboardingScreenUiTest {
         setContent { OnboardingScreen(pages = pages, onFinished = {}, labels = labels) }
         onNodeWithText("First").assertIsDisplayed()
         onNodeWithTag(CAROUSEL_SKIP_BUTTON_TAG).assertDoesNotExist()
+    }
+
+    /**
+     * An illustration richer than an icon — a screenshot, a live preview of the app — can
+     * be taller than the space a page has. The title and description must stay reachable
+     * rather than being pushed off the bottom with no way to get to them, which is what
+     * happened while the page laid out without a scroller.
+     */
+    @Test
+    fun aPageTallerThanTheScreenCanStillBeReadToTheEnd() = runComposeUiTest {
+        setContent {
+            OnboardingScreen(
+                pages = listOf(
+                    OnboardingPage(
+                        title = "First",
+                        description = "one",
+                        illustration = { Box(Modifier.height(4000.dp)) },
+                    )
+                ),
+                onFinished = {},
+                labels = labels,
+                illustrationSize = 0.dp,
+            )
+        }
+
+        onNodeWithText("one").performScrollTo().assertIsDisplayed()
     }
 }
