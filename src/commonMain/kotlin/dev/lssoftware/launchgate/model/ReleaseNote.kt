@@ -21,6 +21,20 @@ import dev.lssoftware.launchgate.ui.ChangeList
 @Immutable
 data class ReleaseNotePage(
     val title: String,
+    /**
+     * Replaces the carousel's advance/finish label while this page is showing. Null — the
+     * default — leaves [dev.lssoftware.launchgate.ui.CarouselLabels] alone.
+     *
+     * A page that offers the reader something to do changes what leaving it means: moving on
+     * from a page selling backup is declining backup, and "Next" does not say so. Worth
+     * overriding only for such a page; a plain note reads better under the same label as every
+     * other.
+     *
+     * It is a composable returning a string rather than a string, because a page like that is
+     * usually offering something conditional — the label has to follow the state the page's own
+     * [content] is already reading, and the page list is built once, outside composition.
+     */
+    val actionLabel: (@Composable () -> String?)? = null,
     val content: @Composable () -> Unit,
 )
 

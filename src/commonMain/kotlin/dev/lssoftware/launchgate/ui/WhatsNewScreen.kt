@@ -81,6 +81,7 @@ fun WhatsNewScreen(
                     onFinished = onFinished,
                     onSkip = onSkip,
                     indicator = indicator,
+                    actionLabel = { index -> pages[index].second.actionLabel?.invoke() },
                     header = title?.let {
                         {
                             Text(

@@ -73,6 +73,10 @@ const val CAROUSEL_PAGER_TAG: String = "launchgate_carousel_pager"
  * @param autoAdvance whether the given page has served its purpose and should be left without a
  *   tap. Acted on only when it turns true while the page is showing; see
  *   [dev.lssoftware.launchgate.model.OnboardingPage.autoAdvance].
+ * @param actionLabel replaces [CarouselLabels.next] / [CarouselLabels.finish] on the given page,
+ *   for a page where leaving means declining something it offered. Null — the default for every
+ *   page — keeps the flow's own labels. Composable, so it can follow the same state the page is
+ *   reading.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -88,6 +92,7 @@ fun PagerCarousel(
     skipVisible: (index: Int) -> Boolean = { true },
     onPageSettled: (index: Int) -> Unit = {},
     autoAdvance: (index: Int) -> Boolean = { false },
+    actionLabel: @Composable (index: Int) -> String? = { null },
     header: @Composable (ColumnScope.() -> Unit)? = null,
     page: @Composable (index: Int) -> Unit,
 ) {
@@ -199,7 +204,9 @@ fun PagerCarousel(
                 .padding(horizontal = 16.dp)
                 .testTag(CAROUSEL_ACTION_BUTTON_TAG),
         ) {
-            Text(if (isLastPage) labels.finish else labels.next)
+            // The page's own wording wins where it has one: only the page knows whether
+            // moving on from it means turning something down.
+            Text(actionLabel(pagerState.currentPage) ?: if (isLastPage) labels.finish else labels.next)
         }
     }
 }

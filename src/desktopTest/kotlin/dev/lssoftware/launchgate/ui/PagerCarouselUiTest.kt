@@ -33,6 +33,27 @@ class PagerCarouselUiTest {
         assertEquals(1, finished)
     }
 
+    /**
+     * A page may rename the advance button, and only while it is the page on screen — the label
+     * belongs to what that page offered, not to the flow.
+     */
+    @Test
+    fun aPageCanRenameTheAdvanceButton() = runComposeUiTest {
+        setContent {
+            PagerCarousel(
+                pageCount = 2,
+                labels = labels,
+                onFinished = {},
+                actionLabel = { index -> "Continue without backup".takeIf { index == 0 } },
+            ) { index -> Text("page $index") }
+        }
+
+        onNodeWithText("Continue without backup").assertIsDisplayed()
+        onNodeWithTag(CAROUSEL_ACTION_BUTTON_TAG).performClick()
+        waitForIdle()
+        onNodeWithText("Got it").assertIsDisplayed()
+    }
+
     /** The skip control leaves the whole flow from the first page, without paging to the end. */
     @Test
     fun skipLeavesFromTheFirstPage() = runComposeUiTest {
