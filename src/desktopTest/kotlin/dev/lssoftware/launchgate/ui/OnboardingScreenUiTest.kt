@@ -72,6 +72,33 @@ class OnboardingScreenUiTest {
         assertEquals(1, skipped)
     }
 
+    /**
+     * A page's own label wins on that page only — here the last page, where it replaces the
+     * finish label, which is where an offer before a paywall sits.
+     */
+    @Test
+    fun aPageCanRenameTheAdvanceButton() = runComposeUiTest {
+        setContent {
+            OnboardingScreen(
+                pages = listOf(
+                    OnboardingPage(title = "First", description = "one"),
+                    OnboardingPage(
+                        title = "Offer",
+                        description = "two",
+                        actionLabel = { "Continue without backup" },
+                    ),
+                ),
+                onFinished = {},
+                labels = labels,
+            )
+        }
+
+        onNodeWithText("Next").assertIsDisplayed()
+        onNodeWithTag(CAROUSEL_ACTION_BUTTON_TAG).performClick()
+        waitForIdle()
+        onNodeWithText("Continue without backup").assertIsDisplayed()
+    }
+
     @Test
     fun aGatedPageHoldsTheFlowAndHidesSkip() = runComposeUiTest {
         var finished = 0

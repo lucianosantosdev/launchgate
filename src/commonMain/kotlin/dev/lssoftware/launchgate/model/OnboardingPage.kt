@@ -51,4 +51,13 @@ data class OnboardingPage(
      * instant they got there.
      */
     val autoAdvance: Boolean = false,
+    /**
+     * Replaces the carousel's advance/finish label while this page is showing. Null — the
+     * default — leaves [dev.lssoftware.launchgate.ui.CarouselLabels] alone.
+     *
+     * The same hook [dev.lssoftware.launchgate.model.ReleaseNotePage.actionLabel] has, for the same kind of page: one that
+     * offers something through its [action], where moving on means declining it and "Next"
+     * does not say so. Composable, so it can follow the state [action] is reading.
+     */
+    val actionLabel: (@Composable () -> String?)? = null,
 )
